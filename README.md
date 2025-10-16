@@ -84,6 +84,8 @@ This project uses the Azure OpenAI Sora-2 API (Preview):
 - **Authentication**: API Key via header
 - **Max Resolution**: 1280x720 (720p)
 - **Max Duration**: 12 seconds
+- **Current Mode**: Text-to-video only
+- **Coming Soon**: Image-to-video (image2video) for video extension and chaining
 
 The API automatically generates audio for the videos based on the prompt.
 
@@ -103,6 +105,18 @@ The generated video will:
 - This is a **preview API** with limited documentation
 - Maximum resolution is 720p (1280x720)
 - Maximum duration is 12 seconds
+- **Image-to-video** (image2video) feature is coming soon to Azure
+  - Once available, this will enable video extension and daisy-chaining for longer videos
+  - Will allow animating still images into videos
+  - Will enable extending existing videos beyond 12 seconds
+
+## Future Features
+
+When **image2video** becomes available in Azure, this project will support:
+- 🎨 Animating still images into videos
+- 🔗 Daisy-chaining multiple 12-second clips for longer videos
+- 🎬 Video extension by using the last frame as input for the next segment
+- 🖼️ Inpainting and filling missing frames
 
 ## Security
 
