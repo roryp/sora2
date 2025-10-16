@@ -13,8 +13,8 @@ Generate videos with audio using Azure OpenAI's Sora-2 model via Python.
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
-   cd sora2python
+   git clone https://github.com/roryp/sora2.git
+   cd sora2
    ```
 
 2. **Install dependencies**
@@ -94,7 +94,7 @@ The API automatically generates audio for the videos based on the prompt.
 ## Output
 
 The generated video will:
-- Be saved as `output.mp4`
+- Be saved as `output.mp4` (or your specified filename)
 - Include both video and audio
 - Match your specified duration and resolution
 
