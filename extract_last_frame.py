@@ -7,6 +7,13 @@ Useful for daisy-chaining videos by using the last frame as input for the next s
 import argparse
 import sys
 
+# Set UTF-8 encoding for Windows console
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except:
+        pass
+
 try:
     import cv2
 except ImportError:

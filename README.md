@@ -55,7 +55,7 @@ python video_generator.py "A cat playing with a ball of yarn"
 ### Command-Line Arguments
 
 - **`prompt`** (required): Text description of the video to generate
-- **`-s, --seconds`**: Video duration in seconds (max: 12, default: 12)
+- **`-s, --seconds`**: Video duration in seconds (options: 4, 8, or 12; default: 12)
 - **`-r, --size`**: Video resolution WIDTHxHEIGHT (max: 1280x720, default: 1280x720)
 - **`-o, --output`**: Output filename (default: output.mp4)
 - **`-i, --input-image`**: Input image file for image-to-video generation (optional)
@@ -181,7 +181,7 @@ This project uses the Azure OpenAI Sora-2 API (Preview):
 - **API Version**: `preview`
 - **Authentication**: API Key via header
 - **Max Resolution**: 1280x720 (720p)
-- **Max Duration**: 12 seconds per generation
+- **Max Duration**: 12 seconds per generation (supported values: 4, 8, or 12 seconds)
 - **Input Modes**:
   - **Text-to-video**: Generate from text prompt (JSON request)
   - **Image-to-video**: Animate from still image (multipart upload with `inpaint_items`)

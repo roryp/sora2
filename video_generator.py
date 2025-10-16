@@ -6,6 +6,13 @@ import json
 import time
 from dotenv import load_dotenv
 
+# Set UTF-8 encoding for Windows console
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except:
+        pass
+
 # Load environment variables
 load_dotenv()
 
@@ -42,8 +49,8 @@ Note: Maximum resolution is 720p (1280x720) and maximum duration is 12 seconds.
     '''
 )
 parser.add_argument('prompt', help='Text description of the video to generate')
-parser.add_argument('-s', '--seconds', type=str, default='12', 
-                    help='Video duration in seconds (max: 12, default: 12)')
+parser.add_argument('-s', '--seconds', type=str, default='12', choices=['4', '8', '12'],
+                    help='Video duration in seconds (options: 4, 8, or 12; default: 12)')
 parser.add_argument('-r', '--size', type=str, default='1280x720',
                     help='Video resolution WIDTHxHEIGHT (max: 1280x720, default: 1280x720)')
 parser.add_argument('-o', '--output', type=str, default='output.mp4',
@@ -131,7 +138,8 @@ else:
     print(f"Prompt: {body['prompt']}")
     print(f"Duration: {body['seconds']} seconds")
     print(f"Size: {body['size']}")
-    print(f"Output: {args.output}\n")
+    print(f"Output: {args.output}")
+    print(f"\nDEBUG - Request body: {json.dumps(body, indent=2)}\n")
     
     job_response = requests.post(constructed_url, headers=headers, json=body)
 

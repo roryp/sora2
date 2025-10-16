@@ -9,10 +9,27 @@ import subprocess
 import os
 import sys
 
+# Set UTF-8 encoding for Windows console
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except:
+        pass
+
 def run_command(cmd, description):
     """Run a shell command and handle errors."""
     print(f"\n🔧 {description}...")
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    
+    # Use UTF-8 encoding for subprocess on Windows
+    encoding = 'utf-8' if sys.platform == "win32" else None
+    result = subprocess.run(
+        cmd, 
+        shell=True, 
+        capture_output=True, 
+        text=True,
+        encoding=encoding,
+        errors='replace'  # Replace undecodable bytes with '?'
+    )
     
     if result.returncode != 0:
         print(f"❌ Error: {description} failed")
