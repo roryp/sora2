@@ -70,9 +70,6 @@ parser.add_argument('--crop-bottom', type=float, default=1.0,
 
 args = parser.parse_args()
 
-# Parse size into width and height
-width, height = args.size.split('x')
-
 headers = {
   'Api-Key': subscription_key,
 }
@@ -101,10 +98,8 @@ if args.input_image:
     # Flatten the body for multipart/form-data
     data = {
         "prompt": args.prompt,
-        "height": height,
-        "width": width,
-        "n_seconds": args.seconds,
-        "n_variants": "1",
+        "size": args.size,
+        "seconds": args.seconds,
         "model": deployment,
         "inpaint_items": json.dumps(inpaint_items)
     }
@@ -116,8 +111,8 @@ if args.input_image:
         ]
         
         print(f"Prompt: {data['prompt']}")
-        print(f"Duration: {data['n_seconds']} seconds")
-        print(f"Size: {width}x{height}")
+        print(f"Duration: {data['seconds']} seconds")
+        print(f"Size: {data['size']}")
         print(f"Frame index: {args.frame_index}")
         print(f"Output: {args.output}\n")
         
