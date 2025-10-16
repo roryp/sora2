@@ -29,15 +29,17 @@ parser = argparse.ArgumentParser(
     epilog='''
 Examples:
   python video_generator.py "A cat playing with a ball of yarn"
-  python video_generator.py "Sunset over ocean" --seconds 16 --size 1920x1080
-  python video_generator.py "Flying drone footage of a city" -s 12 -r 1280x720 -o city.mp4
+  python video_generator.py "Ocean waves at sunset" --seconds 8 --output ocean.mp4
+  python video_generator.py "City traffic time-lapse" -s 10 -o city.mp4
+
+Note: Maximum resolution is 720p (1280x720) and maximum duration is 12 seconds.
     '''
 )
 parser.add_argument('prompt', help='Text description of the video to generate')
 parser.add_argument('-s', '--seconds', type=str, default='12', 
-                    help='Video duration in seconds (default: 12)')
+                    help='Video duration in seconds (max: 12, default: 12)')
 parser.add_argument('-r', '--size', type=str, default='1280x720',
-                    help='Video resolution WIDTHxHEIGHT (default: 1280x720)')
+                    help='Video resolution WIDTHxHEIGHT (max: 1280x720, default: 1280x720)')
 parser.add_argument('-o', '--output', type=str, default='output.mp4',
                     help='Output filename (default: output.mp4)')
 
