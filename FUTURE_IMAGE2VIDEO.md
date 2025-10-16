@@ -1,10 +1,10 @@
-# Image2Video Feature (Coming Soon)
+# Image2Video Feature
 
-## Status: Not Yet Available in Azure
+## Status: ✅ AVAILABLE NOW
 
-The image2video feature is currently **coming soon** to Azure AI Foundry Sora-2 API. This document describes the planned functionality once it becomes available.
+The image2video feature is **now available** in the Azure OpenAI Sora-2 API through the `inpaint_items` parameter! This document describes how to use this feature.
 
-## Planned Features
+## Available Features
 
 ### 1. Image-to-Video Generation
 Generate a video starting from a still image:
@@ -23,59 +23,91 @@ python extract_last_frame.py segment1.mp4 -o frame1.jpg
 
 # Step 3: Generate next segment from that frame
 python video_generator.py "The bird continues flying" --input-image frame1.jpg -o segment2.mp4
-
-# Step 4: Combine segments
-python combine_videos.py segment1.mp4 segment2.mp4 -o full_video.mp4
 ```
 
 ### 3. Automated Chaining
 Automatically create longer videos:
 ```bash
-python chain_videos.py "A journey through the mountains" --total-duration 36 -o long_video.mp4
-# This would create 3x 12-second segments and stitch them together
+python chain_videos.py "A journey through the mountains" --duration 36 -o long_video.mp4
+# This creates 3x 12-second segments and stitches them together
 ```
 
-## Expected API Parameters
+## API Implementation
 
-Based on OpenAI's Sora implementation, the Azure API will likely support:
+The Azure API uses multipart/form-data with the `inpaint_items` parameter:
 
 ```python
+# Text-to-video (JSON)
 body = {
-  "model": "sora-2",
-  "prompt": "Your video description",
-  "seconds": "12",
-  "size": "1280x720",
-  "image": "base64_encoded_image_or_url"  # New parameter
+    "model": "sora-2",
+    "prompt": "Your video description",
+    "seconds": "12",
+    "size": "1280x720"
+}
+
+# Image-to-video (multipart)
+files = [
+    ("files", (image_filename, image_file, "image/jpeg"))
+]
+data = {
+    "model": "sora-2",
+    "prompt": "Your video description",
+    "seconds": "12",
+    "size": "1280x720",
+    "inpaint_items": json.dumps([{
+        "frame_index": 0,
+        "type": "image",
+        "file_name": image_filename,
+        "crop_bounds": {
+            "left_fraction": 0.0,
+            "top_fraction": 0.0,
+            "right_fraction": 1.0,
+            "bottom_fraction": 1.0
+        }
+    }])
 }
 ```
 
+## Parameters
+
+### `--input-image`
+Path to the input image file (JPEG or PNG).
+
+### `--frame-index`
+Where the image appears in the video (default: 0 = start).
+
+### `--crop-*` (left, top, right, bottom)
+Crop bounds as fractions (0.0-1.0) defining image position:
+- `0.0, 0.0, 1.0, 1.0` = full frame (default)
+- `0.1, 0.1, 0.9, 0.9` = 80% centered crop
+
 ## Technical Requirements
 
-When this feature launches, you'll need:
-- **ffmpeg** or **opencv-python** for frame extraction
-- **moviepy** or **ffmpeg** for video concatenation
+Now installed and working:
+- **opencv-python** for frame extraction ✅
+- **ffmpeg** for video concatenation ✅
 
-Install future dependencies:
+## Utilities
+
+### extract_last_frame.py
+Extract the final frame from a video for chaining:
 ```bash
-pip install opencv-python moviepy
+python extract_last_frame.py video.mp4 -o last_frame.jpg
 ```
 
-## Monitoring Updates
+### chain_videos.py
+Automatically generate and stitch multiple segments:
+```bash
+python chain_videos.py "prompt" --duration 36 -o output.mp4
+```
 
-To stay informed about when this feature becomes available:
-1. Check [Azure AI Foundry Playground](https://ai.azure.com/) regularly
-2. Monitor [Azure OpenAI Updates](https://learn.microsoft.com/en-us/azure/ai-services/openai/whats-new)
-3. Watch this repository for updates
+## References
 
-## Contributing
-
-Once image2video becomes available, contributions are welcome for:
-- Frame extraction utilities
-- Video chaining automation
-- Seamless transition algorithms
-- Quality optimization for stitched videos
+- [Azure OpenAI Video Generation Quickstart](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/video-generation-quickstart)
+- See `README.md` for complete usage examples
 
 ---
 
-**Last Updated**: October 16, 2025  
-**Status**: Waiting for Azure feature release
+**Status**: ✅ Implemented and Ready to Use  
+**Last Updated**: January 2025
+

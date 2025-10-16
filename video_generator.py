@@ -28,9 +28,15 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog='''
 Examples:
+  # Text-to-video
   python video_generator.py "A cat playing with a ball of yarn"
   python video_generator.py "Ocean waves at sunset" --seconds 8 --output ocean.mp4
-  python video_generator.py "City traffic time-lapse" -s 10 -o city.mp4
+  
+  # Image-to-video (animate a still image)
+  python video_generator.py "Ocean waves continue" --input-image last_frame.jpg -o segment2.mp4
+  
+  # Video extension (daisy-chaining)
+  python video_generator.py "Scene continues" -i frame.jpg -s 12 -o next_clip.mp4
 
 Note: Maximum resolution is 720p (1280x720) and maximum duration is 12 seconds.
     '''
@@ -42,28 +48,93 @@ parser.add_argument('-r', '--size', type=str, default='1280x720',
                     help='Video resolution WIDTHxHEIGHT (max: 1280x720, default: 1280x720)')
 parser.add_argument('-o', '--output', type=str, default='output.mp4',
                     help='Output filename (default: output.mp4)')
+parser.add_argument('-i', '--input-image', type=str, default=None,
+                    help='Input image file for image-to-video generation (optional)')
+parser.add_argument('--frame-index', type=int, default=0,
+                    help='Frame index where input image appears (default: 0 = start)')
+parser.add_argument('--crop-left', type=float, default=0.0,
+                    help='Crop left fraction (0.0-1.0, default: 0.0)')
+parser.add_argument('--crop-top', type=float, default=0.0,
+                    help='Crop top fraction (0.0-1.0, default: 0.0)')
+parser.add_argument('--crop-right', type=float, default=1.0,
+                    help='Crop right fraction (0.0-1.0, default: 1.0)')
+parser.add_argument('--crop-bottom', type=float, default=1.0,
+                    help='Crop bottom fraction (0.0-1.0, default: 1.0)')
 
 args = parser.parse_args()
 
+# Parse size into width and height
+width, height = args.size.split('x')
+
 headers = {
   'Api-Key': subscription_key,
-  'Content-Type': 'application/json',
 }
 
-body = {
-  "model": deployment,
-  "prompt": args.prompt,
-  "seconds": args.seconds,
-  "size": args.size
-}
+# Prepare request based on whether we have an input image
+if args.input_image:
+    # Image-to-video with multipart/form-data
+    print(f"🎬 Generating video with Sora-2 (Image-to-Video mode)...")
+    print(f"Input image: {args.input_image}")
+    
+    import json
+    
+    # Prepare inpaint_items
+    inpaint_items = [{
+        "frame_index": args.frame_index,
+        "type": "image",
+        "file_name": os.path.basename(args.input_image),
+        "crop_bounds": {
+            "left_fraction": args.crop_left,
+            "top_fraction": args.crop_top,
+            "right_fraction": args.crop_right,
+            "bottom_fraction": args.crop_bottom
+        }
+    }]
+    
+    # Flatten the body for multipart/form-data
+    data = {
+        "prompt": args.prompt,
+        "height": height,
+        "width": width,
+        "n_seconds": args.seconds,
+        "n_variants": "1",
+        "model": deployment,
+        "inpaint_items": json.dumps(inpaint_items)
+    }
+    
+    # Open the image file and prepare multipart upload
+    with open(args.input_image, "rb") as image_file:
+        files = [
+            ("files", (os.path.basename(args.input_image), image_file, "image/jpeg"))
+        ]
+        
+        print(f"Prompt: {data['prompt']}")
+        print(f"Duration: {data['n_seconds']} seconds")
+        print(f"Size: {width}x{height}")
+        print(f"Frame index: {args.frame_index}")
+        print(f"Output: {args.output}\n")
+        
+        job_response = requests.post(constructed_url, headers=headers, data=data, files=files)
+else:
+    # Text-to-video with JSON
+    print(f"🎬 Generating video with Sora-2 (Text-to-Video mode)...")
+    
+    headers['Content-Type'] = 'application/json'
+    
+    body = {
+      "model": deployment,
+      "prompt": args.prompt,
+      "seconds": args.seconds,
+      "size": args.size
+    }
+    
+    print(f"Prompt: {body['prompt']}")
+    print(f"Duration: {body['seconds']} seconds")
+    print(f"Size: {body['size']}")
+    print(f"Output: {args.output}\n")
+    
+    job_response = requests.post(constructed_url, headers=headers, json=body)
 
-print(f"🎬 Generating video with Sora-2...")
-print(f"Prompt: {body['prompt']}")
-print(f"Duration: {body['seconds']} seconds")
-print(f"Size: {body['size']}")
-print(f"Output: {args.output}\n")
-
-job_response = requests.post(constructed_url, headers=headers, json=body)
 
 if not job_response.ok:
     print("❌ Video generation failed.")
