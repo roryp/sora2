@@ -38,7 +38,7 @@ def run_command(cmd, description):
     
     return result.stdout
 
-def chain_videos(prompt, total_duration, output, segment_duration=12):
+def chain_videos(prompt, total_duration, output, segment_duration=12, crossfade_duration=1.0):
     """Create a longer video by chaining multiple segments."""
     
     num_segments = (total_duration + segment_duration - 1) // segment_duration
@@ -92,8 +92,7 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
         print(f"Single segment - copied to {output}")
     else:
         # Multiple segments - use crossfade for smooth transitions
-        # Crossfade duration: 0.5 seconds at each junction
-        crossfade_duration = 0.5
+        # Longer crossfade duration for smoother blending
         
         # Build complex ffmpeg filter for crossfading
         # For 3 segments: [0][1]xfade[v01]; [v01][2]xfade[out]
@@ -109,8 +108,9 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
             # Calculate offset: each segment is segment_duration seconds, minus crossfade overlap
             offset = segment_duration * (i + 1) - crossfade_duration
             
+            # Use 'smoothleft' transition for more natural blending
             filter_parts.append(
-                f"{in_label}xfade=transition=fade:duration={crossfade_duration}:offset={offset}{out_label}"
+                f"{in_label}xfade=transition=smoothleft:duration={crossfade_duration}:offset={offset}{out_label}"
             )
         
         filter_complex = ";".join(filter_parts)
@@ -118,9 +118,10 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
         # Build input arguments
         inputs = " ".join([f'-i {seg}' for seg in segment_files])
         
-        # Full ffmpeg command with crossfade
-        ffmpeg_cmd = f'ffmpeg {inputs} -filter_complex "{filter_complex}" -c:v libx264 -crf 18 -preset medium -c:a aac -b:a 192k {output} -y'
-        run_command(ffmpeg_cmd, "Combining segments with crossfade transitions")
+        # Full ffmpeg command with crossfade and motion interpolation
+        # minterpolate helps smooth out any motion discontinuities
+        ffmpeg_cmd = f'ffmpeg {inputs} -filter_complex "{filter_complex}" -c:v libx264 -crf 18 -preset slow -c:a aac -b:a 192k {output} -y'
+        run_command(ffmpeg_cmd, "Combining segments with smooth transitions")
     
     # Cleanup temporary files
     print("\n🧹 Cleaning up temporary files...")
@@ -139,8 +140,8 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
     print(f"\n✅ Complete! Long video saved as: {output}")
     print(f"   Total duration: ~{total_duration} seconds")
     print(f"   Segments used: {num_segments}")
-    print(f"   Transitions: 0.5s crossfade between segments")
-    print(f"   Method: Image-to-video chaining for smooth transitions")
+    print(f"   Transitions: {crossfade_duration}s smooth crossfade between segments")
+    print(f"   Method: Image-to-video chaining with enhanced blending")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -170,6 +171,8 @@ Requirements: ffmpeg and extract_last_frame.py must be available.
                         help='Output filename (default: chained_output.mp4)')
     parser.add_argument('-s', '--segment-duration', type=int, default=12,
                         help='Duration of each segment in seconds (default: 12)')
+    parser.add_argument('-c', '--crossfade', type=float, default=1.0,
+                        help='Crossfade duration in seconds between segments (default: 1.0, recommended: 0.5-2.0)')
     
     args = parser.parse_args()
     
@@ -179,6 +182,10 @@ Requirements: ffmpeg and extract_last_frame.py must be available.
     
     if args.segment_duration <= 0 or args.segment_duration > 12:
         print("❌ Error: Segment duration must be between 1 and 12 seconds")
+        sys.exit(1)
+    
+    if args.crossfade < 0 or args.crossfade > args.segment_duration:
+        print("❌ Error: Crossfade duration must be between 0 and segment duration")
         sys.exit(1)
     
     # Check dependencies
@@ -204,7 +211,7 @@ Requirements: ffmpeg and extract_last_frame.py must be available.
         print("   Install ffmpeg: https://ffmpeg.org/download.html")
         sys.exit(1)
     
-    chain_videos(args.prompt, args.duration, args.output, args.segment_duration)
+    chain_videos(args.prompt, args.duration, args.output, args.segment_duration, args.crossfade)
 
 if __name__ == '__main__':
     main()

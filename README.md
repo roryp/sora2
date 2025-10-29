@@ -1,256 +1,112 @@
 # Azure OpenAI Sora-2 Video Generator
 
-Generate videos with audio using Azure OpenAI's Sora-2 model via Python.
+Generate videos with audio using Azure OpenAI's Sora-2 model. Text-to-video, image-to-video, and chain segments for longer videos with smooth crossfade transitions.
 
-## Features
+## Quick Start
 
-- 🎬 Generate videos from text prompts
-- 🖼️ **NEW:** Animate still images (image-to-video)
-- 🔗 **NEW:** Chain multiple segments for videos longer than 12 seconds
-- 🎵 Automatic audio generation
-- ⚙️ Configurable duration and resolution
-- 🔒 Secure credential management via environment variables
+```bash
+# Install
+pip install -r requirements.txt
 
-## Setup
+# Configure .env
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_KEY=your-api-key
+AZURE_OPENAI_DEPLOYMENT=sora-2
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/roryp/sora2.git
-   cd sora2
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   
-   **Important:** You need OpenAI Python client 2.0+ for Sora video generation support.
-   
-   **For video chaining, also install ffmpeg:**
-   - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html) or use `winget install ffmpeg`
-   - Linux: `sudo apt install ffmpeg`
-   - macOS: `brew install ffmpeg`
-
-3. **Configure environment variables**
-   
-   Copy `.env.example` to `.env` and fill in your Azure OpenAI credentials:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` with your values:
-   ```
-   AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-   AZURE_OPENAI_API_KEY=your-api-key-here
-   AZURE_OPENAI_DEPLOYMENT=sora-2
-   ```
+# Generate
+python video_generator.py "A cat playing with yarn"                    # 12s video
+python video_generator.py "Ocean sunset" -s 4 -o ocean.mp4            # 4s video
+python video_generator.py "Scene animates" -i photo.jpg -o anim.mp4   # Image-to-video
+python chain_videos.py "Mountain journey" -d 36 -o long.mp4           # 36s chained video
+```
 
 ## Usage
 
-### Basic Usage
-
-Generate a video with a simple prompt:
+### video_generator.py
 ```bash
-python video_generator.py "A cat playing with a ball of yarn"
-```
-
-### Command-Line Arguments
-
-- **`prompt`** (required): Text description of the video to generate
-- **`-s, --seconds`**: Video duration in seconds (options: 4, 8, or 12; default: 12)
-- **`-r, --size`**: Video resolution WIDTHxHEIGHT (max: 1280x720, default: 1280x720)
-- **`-o, --output`**: Output filename (default: output.mp4)
-- **`-i, --input-image`**: Input image file for image-to-video generation (optional)
-- **`--frame-index`**: Frame index where input image appears (default: 0)
-- **`--crop-*`**: Crop bounds for input image (left, top, right, bottom fractions 0.0-1.0)
-
-### Examples
-
-**Basic text-to-video:**
-```bash
-python video_generator.py "A golden retriever puppy playing in a park"
-```
-
-**Custom duration and output:**
-```bash
-python video_generator.py "Ocean waves at sunset" --seconds 10 -o ocean.mp4
-```
-
-**Image-to-video (animate a still image):**
-```bash
-python video_generator.py "The scene comes to life" --input-image photo.jpg -o animated.mp4
-```
-
-**Video extension (daisy-chaining):**
-```bash
-# Generate first segment
-python video_generator.py "Ocean waves" -o segment1.mp4
-
-# Extract last frame
-python extract_last_frame.py segment1.mp4 -o frame1.jpg
-
-# Generate continuation from that frame
-python video_generator.py "Ocean waves continue" -i frame1.jpg -o segment2.mp4
-```
-
-**Automatic chaining for long videos:**
-```bash
-# Create a 36-second video (3 segments of 12 seconds each)
-python chain_videos.py "A bird flying through a forest" --duration 36 -o bird_long.mp4
-```
-
-## Advanced Features
-
-### Image-to-Video
-
-You can use a still image as the starting point for video generation. This is useful for:
-- Animating photos or artwork
-- Creating video continuations (daisy-chaining)
-- Starting from a specific visual state
-
-**How it works:**
-- The input image is positioned at the specified `frame_index` (default: 0 = start of video)
-- `crop_bounds` define which portion of the video frame the image occupies (fractions from 0.0 to 1.0)
-- The AI generates motion based on your text prompt, continuing from the input image
-
-**Crop Bounds Format:**
-```
---crop-left 0.0 --crop-top 0.0 --crop-right 1.0 --crop-bottom 1.0  # Full frame (default)
---crop-left 0.1 --crop-top 0.1 --crop-right 0.9 --crop-bottom 0.9  # 80% centered
-```
-
-**Example workflow:**
-```bash
-# 1. Start with a photo
-python video_generator.py "The lake ripples gently" -i lake.jpg -o lake_video.mp4
-
-# 2. Extract the last frame to continue the scene
-python extract_last_frame.py lake_video.mp4 -o lake_end.jpg
-
-# 3. Generate a continuation
-python video_generator.py "The sun sets over the water" -i lake_end.jpg -o lake_sunset.mp4
-```
-
-### Video Chaining (Breaking the 12-Second Limit)
-
-The Azure Sora-2 API has a 12-second maximum per generation. To create longer videos, use the automatic chaining script:
-
-**How it works:**
-1. First segment: generates from your text prompt (12 seconds)
-2. Extracts the last frame from that segment
-3. Second segment: uses image-to-video with that frame + your prompt (12 seconds)
-4. Repeats for as many segments as needed
-5. Concatenates all segments into one video using ffmpeg
-
-This creates much smoother transitions compared to generating independent segments!
-
-**Usage:**
-```bash
-python chain_videos.py "PROMPT" --duration SECONDS [OPTIONS]
+python video_generator.py "PROMPT" [OPTIONS]
 
 Options:
-  --duration SECONDS    Total video duration (required)
-  --segment-duration    Seconds per segment (default: 12)
-  -o, --output         Output filename (default: chained_video.mp4)
-  --size               Resolution WIDTHxHEIGHT (default: 1280x720)
-  --keep-temp          Keep temporary segment files
+  -s, --seconds 4|8|12     Duration (default: 12)
+  -r, --size WxH           Resolution (default: 1280x720, max: 1920x1080)
+  -o, --output FILE        Output filename (default: output.mp4)
+  -i, --input-image FILE   Input image for image-to-video
+```
+
+### chain_videos.py
+```bash
+python chain_videos.py "PROMPT" -d SECONDS [OPTIONS]
+
+Options:
+  -d, --duration SECONDS      Total duration (required)
+  -s, --segment-duration N    Seconds per segment (default: 12)
+  -c, --crossfade SECONDS     Crossfade duration (default: 1.0, range: 0.5-2.0)
+  -o, --output FILE           Output filename
+  --size WxH                  Resolution
 ```
 
 **Examples:**
 ```bash
-# 24-second video (2 segments)
-python chain_videos.py "A train journey through mountains" --duration 24 -o train.mp4
+# 24-second video with 1-second crossfade
+python chain_videos.py "Train through mountains" -d 24 -o train.mp4
 
-# 60-second video with custom resolution
-python chain_videos.py "Time-lapse of city at night" --duration 60 --size 1280x720 -o city.mp4
+# Extra smooth 2-second crossfade for slow scenes
+python chain_videos.py "Sunset timelapse" -d 60 --crossfade 2.0 -o sunset.mp4
+
+# Quick 0.5-second crossfade for action
+python chain_videos.py "Car chase" -d 36 --crossfade 0.5 -o chase.mp4
 ```
 
-**Notes:**
-- Each segment uses the last frame of the previous segment for continuity
-- There may be slight visual transitions between segments
-- Longer videos take proportionally longer to generate (12s per segment)
-- ffmpeg is required for concatenation
-
-### Help
-
-Get all available options:
+### extract_last_frame.py
 ```bash
-python video_generator.py --help
+python extract_last_frame.py VIDEO.mp4 -o FRAME.jpg
 ```
+
+## Setup
+
+1. **Install dependencies:** `pip install -r requirements.txt` (requires OpenAI Python SDK 2.0+)
+2. **Install ffmpeg** (for chaining): `winget install ffmpeg` (Windows) or `brew install ffmpeg` (macOS)
+3. **Configure `.env`:** Copy `.env.example` to `.env` and add your Azure credentials
+
+## Features
+
+- 🎬 **Text-to-video**: Generate from prompts (max 12s per generation)
+- 🖼️ **Image-to-video**: Animate still images
+- 🔗 **Video chaining**: Create videos >12s with smooth crossfade transitions
+- 🎵 **Audio**: Automatically generated
+- ⚙️ **Configurable**: Duration (4/8/12s), resolution (up to 1080p), crossfade (0.5-2.0s)
 
 ## API Details
 
-This project uses the Azure OpenAI Sora-2 API with the OpenAI Python client:
-- **Client**: OpenAI Python SDK v2.0+
+- **Client**: OpenAI Python SDK v2.0+ with Azure endpoint
 - **Endpoint**: `/openai/v1/` (OpenAI v1 API format)
-- **Authentication**: API Key via header
-- **Max Resolution**: 1920x1080 (1080p)
-- **Max Duration**: 12 seconds per generation (supported values: "4", "8", or "12" as strings)
-- **Input Modes**:
-  - **Text-to-video**: Generate from text prompt using `client.videos.create()`
-  - **Image-to-video**: ✅ **NOW AVAILABLE** - Animate from still image using `input_reference` parameter
-- **Supported Image Formats**: JPEG, PNG, WebP
-- **Video Chaining**: ✅ **NOW AVAILABLE** - Combine multiple 12-second segments using image-to-video for smooth transitions
+- **Authentication**: API Key header
+- **Max Duration**: 12 seconds per generation
+- **Max Resolution**: 1920x1080
+- **Supported Formats**: JPEG, PNG, WebP (input images)
 
-The API automatically generates audio for the videos based on the prompt.
+## Content Moderation
 
-**Note:** Sora 2 uses the OpenAI v1 API format, which is compatible with the standard OpenAI Python client when configured with Azure endpoints.
+Azure content filters may block certain prompts even with minimal settings:
 
+❌ **Avoid:** Children/minors in activities ("girl swimming")  
+✅ **Use:** Animals, nature, objects ("dog swimming", "ocean waves")
 
-## Output
+If blocked, reformulate without specific people or sensitive contexts.
 
-The generated video will:
-- Be saved as `output.mp4` (or your specified filename)
-- Include both video and audio
-- Be in MP4 format at 720p resolution
-- Match your specified duration (up to 12 seconds)
+## Troubleshooting
+
+- **ModuleNotFoundError**: `pip install -r requirements.txt`
+- **API Key error**: Check `.env` file
+- **Moderation blocked**: Use neutral prompts (animals, nature, scenery)
+- **ffmpeg not found**: Install ffmpeg for video chaining
 
 ## Notes
 
-- Video generation typically takes 1-3 minutes depending on duration
-- The API includes content moderation; some prompts may be blocked
-- Ensure your Azure OpenAI resource has Sora-2 deployment enabled
-- Maximum resolution is 1920x1080 (1080p)
-- Maximum duration is 12 seconds per generation
-- **Image-to-video** feature is now fully supported!
-  - ✅ Animate still images into videos
-  - ✅ Extend videos beyond 12 seconds using chaining
-  - ✅ Create smooth transitions between segments
-
-### Content Moderation
-
-Azure OpenAI includes content safety filters that may block certain prompts even with minimal filter settings configured in your deployment. The moderation system operates at the API level and includes safeguards beyond deployment configuration.
-
-**Common blocking scenarios:**
-- Prompts involving children or minors in certain contexts (e.g., "girl swimming")
-- Combinations of people + activities that could be sensitive
-- Content that could be interpreted as unsafe or inappropriate
-
-**Best practices:**
-- Test prompts with simple, non-controversial subjects first
-- If a prompt is blocked, try reformulating without specific people (e.g., "A dog swimming" instead of "A girl and dog swimming")
-- Use descriptive, neutral language focused on scenery, animals, or general activities
-- Contact Azure support if you need access to less restrictive content filtering for legitimate use cases
-
-**Successful prompt examples:**
-- ✅ "A dog playing in water"
-- ✅ "Ocean waves at sunset"
-- ✅ "A bird flying through a forest"
-- ❌ "A girl swimming in a lake" (may be blocked)
-
-## Future Features
-
-Potential upcoming enhancements:
-- � Video-to-video transformations
-- �️ Advanced inpainting and frame interpolation
-- � Style transfer and video effects
-- ⏱️ Longer native generation (beyond 12 seconds)
-
-## Security
-
-⚠️ **Never commit your `.env` file!** 
-
-The `.env` file is included in `.gitignore` to prevent accidental credential exposure.
+- Video generation: 1-3 minutes per 12-second segment
+- Crossfade transitions create smooth segment blending (1.0s default)
+- Some motion discontinuity may remain depending on scene complexity
+- Never commit `.env` file (already in `.gitignore`)
 
 ## License
 

@@ -40,11 +40,14 @@ env/
 *.mp4
 *.jpg
 *.png
+*.webp
 output/
 test_*
 segment_*.mp4
 frame_*.jpg
 chained_*
+concat_list.txt
+error_log.txt
 
 # OS
 .DS_Store

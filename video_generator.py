@@ -124,4 +124,10 @@ try:
 
 except Exception as e:
     print(f"\n❌ Error: {e}")
+    # Try to get more details from the exception
+    if hasattr(e, 'response'):
+        print(f"Response status: {e.response.status_code if hasattr(e.response, 'status_code') else 'N/A'}")
+        print(f"Response body: {e.response.text if hasattr(e.response, 'text') else 'N/A'}")
+    if hasattr(e, 'body'):
+        print(f"Error body: {e.body}")
     sys.exit(1)
