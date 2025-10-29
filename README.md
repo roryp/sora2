@@ -24,6 +24,8 @@ Generate videos with audio using Azure OpenAI's Sora-2 model via Python.
    pip install -r requirements.txt
    ```
    
+   **Important:** You need OpenAI Python client 2.0+ for Sora video generation support.
+   
    **For video chaining, also install ffmpeg:**
    - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html) or use `winget install ffmpeg`
    - Linux: `sudo apt install ffmpeg`
@@ -136,9 +138,11 @@ The Azure Sora-2 API has a 12-second maximum per generation. To create longer vi
 **How it works:**
 1. First segment: generates from your text prompt (12 seconds)
 2. Extracts the last frame from that segment
-3. Second segment: generates from that frame + your prompt (12 seconds)
+3. Second segment: uses image-to-video with that frame + your prompt (12 seconds)
 4. Repeats for as many segments as needed
 5. Concatenates all segments into one video using ffmpeg
+
+This creates much smoother transitions compared to generating independent segments!
 
 **Usage:**
 ```bash
@@ -176,19 +180,21 @@ python video_generator.py --help
 
 ## API Details
 
-This project uses the Azure OpenAI Sora-2 API (Preview):
-- **Endpoint**: `/openai/v1/videos`
-- **API Version**: `preview`
+This project uses the Azure OpenAI Sora-2 API with the OpenAI Python client:
+- **Client**: OpenAI Python SDK v2.0+
+- **Endpoint**: `/openai/v1/` (OpenAI v1 API format)
 - **Authentication**: API Key via header
-- **Max Resolution**: 1280x720 (720p)
-- **Max Duration**: 12 seconds per generation (supported values: 4, 8, or 12 seconds)
+- **Max Resolution**: 1920x1080 (1080p)
+- **Max Duration**: 12 seconds per generation (supported values: "4", "8", or "12" as strings)
 - **Input Modes**:
-  - **Text-to-video**: Generate from text prompt (JSON request)
-  - **Image-to-video**: Animate from still image (multipart upload with `inpaint_items`)
-- **Supported Image Formats**: JPEG, PNG
-- **Video Chaining**: Combine multiple 12-second segments for longer videos
+  - **Text-to-video**: Generate from text prompt using `client.videos.create()`
+  - **Image-to-video**: ✅ **NOW AVAILABLE** - Animate from still image using `input_reference` parameter
+- **Supported Image Formats**: JPEG, PNG, WebP
+- **Video Chaining**: ✅ **NOW AVAILABLE** - Combine multiple 12-second segments using image-to-video for smooth transitions
 
 The API automatically generates audio for the videos based on the prompt.
+
+**Note:** Sora 2 uses the OpenAI v1 API format, which is compatible with the standard OpenAI Python client when configured with Azure endpoints.
 
 
 ## Output
@@ -204,21 +210,20 @@ The generated video will:
 - Video generation typically takes 1-3 minutes depending on duration
 - The API includes content moderation; some prompts may be blocked
 - Ensure your Azure OpenAI resource has Sora-2 deployment enabled
-- This is a **preview API** with limited documentation
-- Maximum resolution is 720p (1280x720)
-- Maximum duration is 12 seconds
-- **Image-to-video** (image2video) feature is coming soon to Azure
-  - Once available, this will enable video extension and daisy-chaining for longer videos
-  - Will allow animating still images into videos
-  - Will enable extending existing videos beyond 12 seconds
+- Maximum resolution is 1920x1080 (1080p)
+- Maximum duration is 12 seconds per generation
+- **Image-to-video** feature is now fully supported!
+  - ✅ Animate still images into videos
+  - ✅ Extend videos beyond 12 seconds using chaining
+  - ✅ Create smooth transitions between segments
 
 ## Future Features
 
-When **image2video** becomes available in Azure, this project will support:
-- 🎨 Animating still images into videos
-- 🔗 Daisy-chaining multiple 12-second clips for longer videos
-- 🎬 Video extension by using the last frame as input for the next segment
-- 🖼️ Inpainting and filling missing frames
+Potential upcoming enhancements:
+- � Video-to-video transformations
+- �️ Advanced inpainting and frame interpolation
+- � Style transfer and video effects
+- ⏱️ Longer native generation (beyond 12 seconds)
 
 ## Security
 

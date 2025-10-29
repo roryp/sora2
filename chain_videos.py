@@ -46,28 +46,39 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
     print(f"🎬 Creating {total_duration}s video in {num_segments} segments")
     print(f"Base prompt: {prompt}")
     print(f"Output: {output}")
-    print(f"⚠️  Note: Image-to-video not available - generating independent segments\n")
+    print(f"✨ Using image-to-video chaining for smooth transitions\n")
     
     segment_files = []
+    last_frame = None
     
     for i in range(num_segments):
         segment_num = i + 1
         segment_file = f"segment_{segment_num}.mp4"
+        frame_file = f"frame_{segment_num}.jpg"
         
         print(f"\n{'='*60}")
         print(f"Segment {segment_num}/{num_segments}")
         print(f"{'='*60}")
         
-        # Generate text-to-video segment (no image input since feature unavailable)
-        if num_segments > 1:
-            segment_prompt = f"{prompt} (part {segment_num})"
-        else:
+        # Generate segment
+        if i == 0:
+            # First segment: text-to-video
             segment_prompt = prompt
-            
-        cmd = f'python video_generator.py "{segment_prompt}" -s {segment_duration} -o {segment_file}'
+            cmd = f'python video_generator.py "{segment_prompt}" -s {segment_duration} -o {segment_file}'
+        else:
+            # Subsequent segments: image-to-video using last frame
+            segment_prompt = f"{prompt}, continuing smoothly"
+            cmd = f'python video_generator.py "{segment_prompt}" -s {segment_duration} -o {segment_file} -i {last_frame}'
+        
         run_command(cmd, f"Generating segment {segment_num}")
         
         segment_files.append(segment_file)
+        
+        # Extract last frame for next segment (except for the last segment)
+        if i < num_segments - 1:
+            extract_cmd = f'python extract_last_frame.py {segment_file} -o {frame_file}'
+            run_command(extract_cmd, f"Extracting last frame from segment {segment_num}")
+            last_frame = frame_file
     
     # Combine all segments
     print(f"\n{'='*60}")
@@ -91,6 +102,13 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
             os.remove(seg)
             print(f"  Removed {seg}")
     
+    # Clean up frame files
+    for i in range(1, num_segments):
+        frame_file = f"frame_{i}.jpg"
+        if os.path.exists(frame_file):
+            os.remove(frame_file)
+            print(f"  Removed {frame_file}")
+    
     if os.path.exists(concat_file):
         os.remove(concat_file)
         print(f"  Removed {concat_file}")
@@ -98,6 +116,7 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
     print(f"\n✅ Complete! Long video saved as: {output}")
     print(f"   Total duration: ~{total_duration} seconds")
     print(f"   Segments used: {num_segments}")
+    print(f"   Method: Image-to-video chaining for smooth transitions")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -114,9 +133,9 @@ Examples:
   # Create a 60-second video (5 segments)
   python chain_videos.py "City traffic time-lapse" -d 60 -o city_long.mp4
 
-Note: Each segment is generated independently (image-to-video feature not available).
-      Segments are 12 seconds each and stitched together with ffmpeg.
-Requirements: ffmpeg must be installed.
+Note: Uses image-to-video chaining for smooth transitions between segments.
+      Each segment is 12 seconds and uses the last frame of the previous segment.
+Requirements: ffmpeg and extract_last_frame.py must be available.
         '''
     )
     
@@ -144,6 +163,13 @@ Requirements: ffmpeg must be installed.
                       capture_output=True, check=True)
     except:
         print("❌ Error: video_generator.py not found or not working")
+        sys.exit(1)
+    
+    try:
+        subprocess.run(['python', 'extract_last_frame.py', '--help'], 
+                      capture_output=True, check=True)
+    except:
+        print("❌ Error: extract_last_frame.py not found or not working")
         sys.exit(1)
     
     try:

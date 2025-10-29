@@ -25,6 +25,7 @@ wheels/
 
 # Virtual environments
 venv/
+.venv/
 ENV/
 env/
 
@@ -37,7 +38,13 @@ env/
 
 # Output files
 *.mp4
+*.jpg
+*.png
 output/
+test_*
+segment_*.mp4
+frame_*.jpg
+chained_*
 
 # OS
 .DS_Store
