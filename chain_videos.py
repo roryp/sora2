@@ -85,15 +85,42 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
     print("Combining segments...")
     print(f"{'='*60}\n")
     
-    # Create file list for ffmpeg concat
-    concat_file = "concat_list.txt"
-    with open(concat_file, 'w') as f:
-        for seg in segment_files:
-            f.write(f"file '{seg}'\n")
-    
-    # Use ffmpeg to concatenate
-    ffmpeg_cmd = f'ffmpeg -f concat -safe 0 -i {concat_file} -c copy {output} -y'
-    run_command(ffmpeg_cmd, "Combining segments with ffmpeg")
+    if len(segment_files) == 1:
+        # Single segment, just copy
+        import shutil
+        shutil.copy(segment_files[0], output)
+        print(f"Single segment - copied to {output}")
+    else:
+        # Multiple segments - use crossfade for smooth transitions
+        # Crossfade duration: 0.5 seconds at each junction
+        crossfade_duration = 0.5
+        
+        # Build complex ffmpeg filter for crossfading
+        # For 3 segments: [0][1]xfade[v01]; [v01][2]xfade[out]
+        filter_parts = []
+        for i in range(len(segment_files) - 1):
+            if i == 0:
+                in_label = f"[0][{i+1}]"
+            else:
+                in_label = f"[v{i-1}{i}][{i+1}]"
+            
+            out_label = f"[v{i}{i+1}]" if i < len(segment_files) - 2 else ""
+            
+            # Calculate offset: each segment is segment_duration seconds, minus crossfade overlap
+            offset = segment_duration * (i + 1) - crossfade_duration
+            
+            filter_parts.append(
+                f"{in_label}xfade=transition=fade:duration={crossfade_duration}:offset={offset}{out_label}"
+            )
+        
+        filter_complex = ";".join(filter_parts)
+        
+        # Build input arguments
+        inputs = " ".join([f'-i {seg}' for seg in segment_files])
+        
+        # Full ffmpeg command with crossfade
+        ffmpeg_cmd = f'ffmpeg {inputs} -filter_complex "{filter_complex}" -c:v libx264 -crf 18 -preset medium -c:a aac -b:a 192k {output} -y'
+        run_command(ffmpeg_cmd, "Combining segments with crossfade transitions")
     
     # Cleanup temporary files
     print("\n🧹 Cleaning up temporary files...")
@@ -109,13 +136,10 @@ def chain_videos(prompt, total_duration, output, segment_duration=12):
             os.remove(frame_file)
             print(f"  Removed {frame_file}")
     
-    if os.path.exists(concat_file):
-        os.remove(concat_file)
-        print(f"  Removed {concat_file}")
-    
     print(f"\n✅ Complete! Long video saved as: {output}")
     print(f"   Total duration: ~{total_duration} seconds")
     print(f"   Segments used: {num_segments}")
+    print(f"   Transitions: 0.5s crossfade between segments")
     print(f"   Method: Image-to-video chaining for smooth transitions")
 
 def main():

@@ -217,6 +217,27 @@ The generated video will:
   - ✅ Extend videos beyond 12 seconds using chaining
   - ✅ Create smooth transitions between segments
 
+### Content Moderation
+
+Azure OpenAI includes content safety filters that may block certain prompts even with minimal filter settings configured in your deployment. The moderation system operates at the API level and includes safeguards beyond deployment configuration.
+
+**Common blocking scenarios:**
+- Prompts involving children or minors in certain contexts (e.g., "girl swimming")
+- Combinations of people + activities that could be sensitive
+- Content that could be interpreted as unsafe or inappropriate
+
+**Best practices:**
+- Test prompts with simple, non-controversial subjects first
+- If a prompt is blocked, try reformulating without specific people (e.g., "A dog swimming" instead of "A girl and dog swimming")
+- Use descriptive, neutral language focused on scenery, animals, or general activities
+- Contact Azure support if you need access to less restrictive content filtering for legitimate use cases
+
+**Successful prompt examples:**
+- ✅ "A dog playing in water"
+- ✅ "Ocean waves at sunset"
+- ✅ "A bird flying through a forest"
+- ❌ "A girl swimming in a lake" (may be blocked)
+
 ## Future Features
 
 Potential upcoming enhancements:

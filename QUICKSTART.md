@@ -37,7 +37,15 @@ Output: `journey.mp4` (36 seconds with smooth transitions)
 - **Duration**: 4, 8, or 12 seconds per segment
 - **Resolution**: Max 1920x1080 (1080p)
 - **Chaining**: Automatically handles transitions
-- **Moderation**: Some content may be blocked by safety filters
+- **Moderation**: Some content may be blocked by safety filters (see below)
+
+### Content Moderation Notes
+
+Azure's content safety may block prompts even with minimal filter settings:
+- ❌ Avoid: Children/minors in activities (e.g., "girl swimming")
+- ✅ Use: Animals, nature, objects (e.g., "dog swimming", "ocean waves")
+- ✅ Use: General scenes without specific people (e.g., "forest landscape")
+- If blocked, try reformulating without specific people or sensitive contexts
 
 ## Common Commands
 
@@ -69,7 +77,7 @@ AZURE_OPENAI_DEPLOYMENT=sora-2
 
 - **"ModuleNotFoundError"**: Run `pip install -r requirements.txt`
 - **"API Key not found"**: Check your `.env` file
-- **"Moderation blocked"**: Try a different prompt
-- **"ffmpeg not found"**: Install ffmpeg for chaining
+- **"Moderation blocked"**: Avoid prompts with children/minors; use animals, nature, or general scenes instead
+- **"ffmpeg not found"**: Install ffmpeg for chaining (`winget install ffmpeg` on Windows)
 
 See [README.md](README.md) for detailed documentation.
