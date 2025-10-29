@@ -2,6 +2,13 @@
 
 Generate videos with audio using Azure OpenAI's Sora-2 model. Text-to-video, image-to-video, and chain segments for longer videos with smooth crossfade transitions.
 
+## Model Information
+
+**Model:** Azure OpenAI Sora-2  
+**Provider:** Microsoft Azure OpenAI Service  
+**Capabilities:** Text-to-video and image-to-video generation with audio  
+**Access:** Requires Azure OpenAI API key and endpoint
+
 ## Quick Start
 
 ```bash
