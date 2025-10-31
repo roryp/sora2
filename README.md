@@ -50,12 +50,22 @@ Options:
 # 24-second video with 1-second crossfade
 python chain_videos.py "Train through mountains" -d 24 -o train.mp4
 
+# Shorter segments (4s) for better continuity
+python chain_videos.py "A majestic steam train slowly moving through misty mountain valleys at golden hour" -d 8 -s 4 -o train.mp4
+
 # Extra smooth 2-second crossfade for slow scenes
 python chain_videos.py "Sunset timelapse" -d 60 --crossfade 2.0 -o sunset.mp4
 
 # Quick 0.5-second crossfade for action
 python chain_videos.py "Car chase" -d 36 --crossfade 0.5 -o chase.mp4
 ```
+
+**Best Practices for Chaining:**
+- **Use detailed prompts**: Include lighting, camera angles, motion direction (e.g., "cinematic wide shot, camera following left to right")
+- **Shorter segments (4-8s)**: Better visual continuity than 12s segments; less time for AI to drift
+- **Specify motion**: Describe camera movement to maintain consistency ("smooth pan", "static shot", "tracking shot")
+- **Test first**: Generate single segments to verify prompt quality before creating long chains
+- **Audio**: Both video and audio crossfade automatically for seamless transitions
 
 ### extract_last_frame.py
 ```bash
@@ -72,9 +82,9 @@ python extract_last_frame.py VIDEO.mp4 -o FRAME.jpg
 
 - 🎬 **Text-to-video**: Generate from prompts (max 12s per generation)
 - 🖼️ **Image-to-video**: Animate still images
-- 🔗 **Video chaining**: Create videos >12s with smooth crossfade transitions
-- 🎵 **Audio**: Automatically generated
-- ⚙️ **Configurable**: Duration (4/8/12s), resolution (up to 1080p), crossfade (0.5-2.0s)
+- 🔗 **Video chaining**: Create videos >12s with smooth video and audio crossfade transitions
+- 🎵 **Audio**: Automatically generated and crossfaded between segments
+- ⚙️ **Configurable**: Duration (4/8/12s), resolution (up to 1080p), crossfade (0.5-2.0s), segment length
 
 ## API Details
 
@@ -99,13 +109,18 @@ If blocked, reformulate without specific people or sensitive contexts.
 - **ModuleNotFoundError**: `pip install -r requirements.txt`
 - **API Key error**: Check `.env` file
 - **Moderation blocked**: Use neutral prompts (animals, nature, scenery)
-- **ffmpeg not found**: Install ffmpeg for video chaining
+- **ffmpeg not found**: Install ffmpeg for video chaining. After installing via winget, restart terminal/VS Code or add to PATH manually
+- **Rate limit (429 errors)**: Wait a few minutes between requests; Azure may throttle high-frequency API calls
+- **Direction/continuity issues**: Use shorter segments (4-8s) and detailed prompts describing camera motion and scene direction
 
 ## Notes
 
 - Video generation: 1-3 minutes per 12-second segment
-- Crossfade transitions create smooth segment blending (1.0s default)
-- Some motion discontinuity may remain depending on scene complexity
+- Crossfade transitions create smooth video and audio blending (1.0s default)
+- **Chaining limitations**: AI generates each segment independently; scene direction/camera angle may change
+  - Use detailed prompts with specific camera angles and motion direction
+  - Shorter segments (4-8s) maintain better visual continuity
+  - Image-to-video chaining helps but doesn't guarantee perfect continuity
 - Never commit `.env` file (already in `.gitignore`)
 
 ## License
