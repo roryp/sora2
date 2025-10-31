@@ -94,33 +94,45 @@ def chain_videos(prompt, total_duration, output, segment_duration=12, crossfade_
         # Multiple segments - use crossfade for smooth transitions
         # Longer crossfade duration for smoother blending
         
-        # Build complex ffmpeg filter for crossfading
-        # For 3 segments: [0][1]xfade[v01]; [v01][2]xfade[out]
-        filter_parts = []
+        # Build complex ffmpeg filter for crossfading video and audio
+        # Video: [0:v][1:v]xfade[v01]; [v01][2:v]xfade[vout]
+        # Audio: [0:a][1:a]acrossfade[a01]; [a01][2:a]acrossfade[aout]
+        video_filter_parts = []
+        audio_filter_parts = []
+        
         for i in range(len(segment_files) - 1):
+            # Video filter labels
             if i == 0:
-                in_label = f"[0][{i+1}]"
+                v_in_label = f"[0:v][{i+1}:v]"
+                a_in_label = f"[0:a][{i+1}:a]"
             else:
-                in_label = f"[v{i-1}{i}][{i+1}]"
+                v_in_label = f"[v{i-1}{i}][{i+1}:v]"
+                a_in_label = f"[a{i-1}{i}][{i+1}:a]"
             
-            out_label = f"[v{i}{i+1}]" if i < len(segment_files) - 2 else ""
+            v_out_label = f"[v{i}{i+1}]" if i < len(segment_files) - 2 else "[vout]"
+            a_out_label = f"[a{i}{i+1}]" if i < len(segment_files) - 2 else "[aout]"
             
             # Calculate offset: each segment is segment_duration seconds, minus crossfade overlap
             offset = segment_duration * (i + 1) - crossfade_duration
             
-            # Use 'smoothleft' transition for more natural blending
-            filter_parts.append(
-                f"{in_label}xfade=transition=smoothleft:duration={crossfade_duration}:offset={offset}{out_label}"
+            # Video crossfade with smoothleft transition
+            video_filter_parts.append(
+                f"{v_in_label}xfade=transition=smoothleft:duration={crossfade_duration}:offset={offset}{v_out_label}"
+            )
+            
+            # Audio crossfade for smooth audio transitions
+            audio_filter_parts.append(
+                f"{a_in_label}acrossfade=d={crossfade_duration}:c1=tri:c2=tri{a_out_label}"
             )
         
-        filter_complex = ";".join(filter_parts)
+        # Combine video and audio filters
+        filter_complex = ";".join(video_filter_parts + audio_filter_parts)
         
         # Build input arguments
         inputs = " ".join([f'-i {seg}' for seg in segment_files])
         
-        # Full ffmpeg command with crossfade and motion interpolation
-        # minterpolate helps smooth out any motion discontinuities
-        ffmpeg_cmd = f'ffmpeg {inputs} -filter_complex "{filter_complex}" -c:v libx264 -crf 18 -preset slow -c:a aac -b:a 192k {output} -y'
+        # Full ffmpeg command with video and audio crossfades
+        ffmpeg_cmd = f'ffmpeg {inputs} -filter_complex "{filter_complex}" -map "[vout]" -map "[aout]" -c:v libx264 -crf 18 -preset slow -c:a aac -b:a 192k {output} -y'
         run_command(ffmpeg_cmd, "Combining segments with smooth transitions")
     
     # Cleanup temporary files
