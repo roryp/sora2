@@ -111,7 +111,7 @@ def pad_segment_with_frame(segment_path: str, frame_path: str,
         return
 
     fps_value = fps if fps else 30
-    padded_path = f"{segment_path}.padded"
+    padded_path = segment_path.replace('.mp4', '_padded.mp4')
 
     filter_complex = (
         f"[0:v]fps={fps_value},format=yuv420p,setsar=1[vpad];"
