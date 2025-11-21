@@ -41,6 +41,7 @@ Options:
   -d, --duration SECONDS      Total duration (required)
   -s, --segment-duration N    Seconds per segment (default: 12)
   -c, --crossfade SECONDS     Crossfade duration (default: 1.0, range: 0.5-2.0)
+  --pad-start SECONDS        Prepend previous last frame to each segment (default: match crossfade)
   -o, --output FILE           Output filename
   --size WxH                  Resolution
 ```
@@ -62,6 +63,7 @@ python chain_videos.py "Car chase" -d 36 --crossfade 0.5 -o chase.mp4
 
 **Best Practices for Chaining:**
 - **Use detailed prompts**: Include lighting, camera angles, motion direction (e.g., "cinematic wide shot, camera following left to right")
+- **Pad starts**: Leave padding enabled (default) or set `--pad-start` to your crossfade value so the next segment begins on the same frame used to end the prior one.
 - **Shorter segments (4-8s)**: Better visual continuity than 12s segments; less time for AI to drift
 - **Specify motion**: Describe camera movement to maintain consistency ("smooth pan", "static shot", "tracking shot")
 - **Test first**: Generate single segments to verify prompt quality before creating long chains
