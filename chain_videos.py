@@ -91,7 +91,9 @@ def pad_segment_with_frame(segment_path: str, frame_path: str,
                            pad_seconds: float, fps: Optional[float]) -> None:
     """
     Prepend a short still section (previous segment's last frame) to the start
-    of a segment so the next crossfade blends against identical frames.
+    of a segment so the next crossfade blends against identical frames. Unlike a
+    pure freeze, this eases from the last frame into the first motion of the new
+    segment to avoid a visible "static then jump".
     """
     if pad_seconds <= 0:
         return
@@ -100,24 +102,31 @@ def pad_segment_with_frame(segment_path: str, frame_path: str,
         print(f"? Warning: pad frame missing ({frame_path}); skipping padding.")
         return
 
+    # Clamp pad to segment duration to avoid zero-length outputs
+    seg_duration = get_video_duration(segment_path)
+    if pad_seconds >= seg_duration:
+        pad_seconds = max(0, seg_duration - 0.1)
+        print(f"? Pad trimmed to {pad_seconds:.2f}s to fit segment duration")
+    if pad_seconds <= 0:
+        return
+
     fps_value = f"{fps:.3f}" if fps else "24"
     padded_path = f"{segment_path}.padded"
 
     filter_complex = (
-        f"[0:v]fps={fps_value},format=yuv420p,setsar=1[vpad];"
-        f"[1:v]setpts=PTS-STARTPTS[vseg];"
-        f"[1:a]aresample=48000,aformat=sample_rates=48000:channel_layouts=stereo,asetpts=PTS-STARTPTS[aseg];"
-        f"[2:a]aformat=sample_rates=48000:channel_layouts=stereo,asetpts=PTS-STARTPTS[asilence];"
-        f"[vpad][vseg]concat=n=2:v=1:a=0[vout];"
-        f"[asilence][aseg]concat=n=2:v=0:a=1[aout]"
+        f"[0:v]fps={fps_value},format=yuv420p,setsar=1[vimg];"
+        f"[1:v]split[vstart][vrest];"
+        f"[vstart]trim=0:{pad_seconds},setpts=PTS-STARTPTS[vstart];"
+        f"[vrest]trim={pad_seconds},setpts=PTS-STARTPTS[vrest];"
+        f"[vimg][vstart]xfade=transition=fade:duration={pad_seconds}:offset=0[vhead];"
+        f"[vhead][vrest]concat=n=2:v=1:a=0[vout]"
     )
 
     cmd = (
         f'ffmpeg -y -loop 1 -t {pad_seconds} -i "{frame_path}" '
-        f'-i "{segment_path}" -f lavfi -t {pad_seconds} '
-        f'-i anullsrc=r=48000:cl=stereo '
+        f'-i "{segment_path}" '
         f'-filter_complex "{filter_complex}" '
-        f'-map "[vout]" -map "[aout]" -c:v libx264 -crf 18 -preset fast '
+        f'-map "[vout]" -map 1:a -c:v libx264 -crf 18 -preset fast '
         f'-c:a aac -shortest -f mp4 "{padded_path}"'
     )
     run_command(cmd, f"Padding {segment_path} with previous last frame ({pad_seconds}s)")
