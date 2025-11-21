@@ -359,7 +359,9 @@ Requirements: ffmpeg and extract_last_frame.py must be available.
         print("   Install ffmpeg: https://ffmpeg.org/download.html")
         sys.exit(1)
 
-    pad_value = args.pad_start if args.pad_start is not None else args.crossfade
+    # Default pad: short ramp-in (60% of crossfade, capped) to avoid long stills
+    default_pad = min(args.crossfade * 0.6, 0.6)
+    pad_value = args.pad_start if args.pad_start is not None else default_pad
 
     chain_videos(args.prompt, args.duration, args.output,
                  args.segment_duration, args.crossfade, pad_value, args.size)
